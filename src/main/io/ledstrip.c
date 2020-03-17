@@ -964,7 +964,7 @@ static void applyLedBlinkLayer(bool updateNow, timeUs_t *timer)
     }
 
     bool ledOn = (blinkMask & 1);  // b_b_____...
-    if (!ledOn) {
+    if (ledOn) {
         for (int i = 0; i < ledCounts.count; ++i) {
             const ledConfig_t *ledConfig = &ledStripStatusModeConfig()->ledConfigs[i];
 
