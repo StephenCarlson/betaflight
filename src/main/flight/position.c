@@ -146,7 +146,11 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
 
 
     if (haveGpsAlt && haveBaroAlt && positionConfig()->altSource == DEFAULT) {
-        estimatedAltitudeCm = gpsAlt * gpsTrust + baroAlt * (1 - gpsTrust);
+        if (ARMING_FLAG(ARMED)) {
+            estimatedAltitudeCm = gpsAlt * gpsTrust + baroAlt * (1 - gpsTrust);
+        } else {
+            estimatedAltitudeCm = gpsAlt; //absolute altitude is shown before arming, ignore baro
+        }
 #ifdef USE_VARIO
         // baro is a better source for vario, so ignore gpsVertSpeed
         estimatedVario = calculateEstimatedVario(baroAlt, dTime);
@@ -184,12 +188,9 @@ int32_t getEstimatedAltitudeCm(void)
     return estimatedAltitudeCm;
 }
 
-// This should be removed or fixed, but it would require changing a lot of other things to get rid of.
+#ifdef USE_VARIO
 int16_t getEstimatedVario(void)
 {
-#ifdef USE_VARIO
     return estimatedVario;
-#else
-    return 0;
-#endif
 }
+#endif
