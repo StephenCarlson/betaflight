@@ -96,6 +96,7 @@ COMMON_SRC = \
             flight/interpolated_setpoint.c \
             flight/mixer.c \
             flight/mixer_tricopter.c \
+            flight/mixer_vtol.c \
             flight/pid.c \
             flight/pid_init.c \
             flight/rpm_filter.c \

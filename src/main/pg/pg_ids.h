@@ -152,6 +152,8 @@
 #define PG_MODE_ACTIVATION_CONFIG 553
 #define PG_BETAFLIGHT_END 553
 
+#define PG_VTOL_CONFIG 576
+
 
 // OSD configuration (subject to change)
 #define PG_OSD_FONT_CONFIG 2047

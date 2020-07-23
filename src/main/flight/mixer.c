@@ -55,6 +55,7 @@
 #include "flight/gps_rescue.h"
 #include "flight/mixer.h"
 #include "flight/mixer_tricopter.h"
+#include "flight/mixer_vtol.h"
 #include "flight/pid.h"
 #include "flight/rpm_filter.h"
 
@@ -762,6 +763,8 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t 
             motorOutput += mixerTricopterMotorCorrection(i);
         }
 #endif
+        // mixerVtolMotorAttenuation(&motorOutput, i);
+        motorOutput = mixerVtolMotorAttenuation(motorOutput, throttle, i);
         if (failsafeIsActive()) {
 #ifdef USE_DSHOT
             if (isMotorProtocolDshot()) {
