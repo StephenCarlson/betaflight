@@ -37,8 +37,8 @@ PG_DECLARE(vtolMixerConfig_t, vtolMixerConfig);
 
 typedef struct vtolRule_s {
     // uint8_t targetMotor;               // Motor being modified (captured as index for now)
-    uint8_t inputSource;                  // RC Input channel that drives transfer function
-    uint8_t throttleMask;                 // Boolean {0,1} flag, 0 for simple attenuation, 1 if throttle is added back.
+    uint8_t inputSource;                  // RC Input channel that drives transfer function (), indexed via rc_controls.h->rc_alias
+    float throttleFactor;                 // Range [0f : 1.0f]; In forward flight: 0f stops rotor, 1.0f is passthru equivalent.
     float pts[5];                         // Set of points for piecewise transfer function
     // float p1;                             // Coefficient at inputSource=0
     // float p2;                             // Coefficient at inputSource=250
@@ -71,4 +71,5 @@ typedef struct vtolRule_s {
 
 void mixerVtolInit(void);
 // void mixerVtolMotorAttenuation(float* setpoint, int motor);
-float mixerVtolMotorAttenuation(float setpoint, float throttle, int motor);
+// float mixerVtolMotorAttenuation(float setpoint, float throttle, int motor);
+float mixerVtolMotorAttenuation(float setpoint, int motor);

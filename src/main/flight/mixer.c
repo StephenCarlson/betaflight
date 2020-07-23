@@ -756,6 +756,8 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t 
 #ifdef USE_THRUST_LINEARIZATION
         motorOutput = pidApplyThrustLinearization(motorOutput);
 #endif
+        // mixerVtolMotorAttenuation(&motorOutput, i);
+        motorOutput = mixerVtolMotorAttenuation(motorOutput, i);
         motorOutput = motorOutputMin + motorOutputRange * motorOutput;
 
 #ifdef USE_SERVOS
@@ -763,8 +765,6 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t 
             motorOutput += mixerTricopterMotorCorrection(i);
         }
 #endif
-        // mixerVtolMotorAttenuation(&motorOutput, i);
-        motorOutput = mixerVtolMotorAttenuation(motorOutput, throttle, i);
         if (failsafeIsActive()) {
 #ifdef USE_DSHOT
             if (isMotorProtocolDshot()) {

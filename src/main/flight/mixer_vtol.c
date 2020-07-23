@@ -30,7 +30,6 @@
 // #include "common/utils.h"
 
 #include "fc/rc_controls.h"
-// #include "fc/rc_modes.h"
 
 #include "flight/mixer.h"
 #include "flight/mixer_vtol.h"
@@ -52,15 +51,16 @@ PG_RESET_TEMPLATE(vtolMixerConfig_t, vtolMixerConfig,
 // PWM_RANGE_MIN is 1000, but not appropiate for 0 to 1000 range
 
 const vtolRule_t vtolRules[] = {
-    { .inputSource=8, .throttleMask=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
-    { .inputSource=8, .throttleMask=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
-    { .inputSource=8, .throttleMask=0, .pts={0.00f,0.25f,0.60f,0.80f,1.00f} },
+    { .inputSource=4, .throttleFactor=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
+    { .inputSource=4, .throttleFactor=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
+    { .inputSource=4, .throttleFactor=0, .pts={0.00f,0.25f,0.60f,0.80f,1.00f} },
     };
 
 
 
-//void mixerVtolMotorAttenuation(float* setpoint, int motor) // Pass by reference variant
-float mixerVtolMotorAttenuation(float setpoint, float throttle, int motor) // Pass by Value variant
+// void mixerVtolMotorAttenuation(float* setpoint, int motor) // Pass by reference variant
+// float mixerVtolMotorAttenuation(float setpoint, float throttle, int motor) // Pass by Value variant
+float mixerVtolMotorAttenuation(float setpoint, int motor) // Removed throttle field due to trashed/tampered value in mixer.c
 {
     // vtolRule_t currentVtolRule = *vtolRules[motor].rule;
     // vtolRule_t currentVtolRule = vtolRules[motor].rule;
@@ -68,18 +68,21 @@ float mixerVtolMotorAttenuation(float setpoint, float throttle, int motor) // Pa
     // float throttle = constrain(rcData[THROTTLE] - PWM_RANGE_MIN, 0, 1000); // Needs rc_command float, inject from outside instead.
     
     uint8_t ch = constrain(currentVtolRule.inputSource, ROLL, AUX8);
-    int16_t vtolCondition = constrain( (rcData[ch] - PWM_RANGE_MIN), 0, 1000);
+    int16_t vtolCondition = constrain( (rcData[ch] - PWM_RANGE_MIN), 0, (PWM_RANGE_MAX-PWM_RANGE_MIN));
 
     const int8_t maxIndex = sizeof(((vtolRule_t *)0)->pts)/sizeof(float) - 1; // 4
-    const int16_t stride = (1000/maxIndex); // 250
+    const int16_t stride = ((PWM_RANGE_MAX-PWM_RANGE_MIN)/maxIndex); // 250
 
     int16_t xi = vtolCondition / stride; // [0:4] Index to array y values
     int16_t x  = vtolCondition % stride; // [0:249]
     float y0 = currentVtolRule.pts[xi]; // [0.0f : 1.0f]
     float y1 = (xi < maxIndex)? currentVtolRule.pts[xi+1] : y0;
 
+    float throttle = (rcCommand[THROTTLE] - PWM_RANGE_MIN) / (PWM_RANGE_MAX-PWM_RANGE_MIN);
+    throttle = constrainf(throttle, 0.0f, 1.0f);
+
     float attenuationCoeff = y0 + x * (y1 - y0)/(stride);
-    float throttleComponent = (1.0f - attenuationCoeff) * throttle * currentVtolRule.throttleMask;
+    float throttleComponent = (1.0f - attenuationCoeff) * throttle * currentVtolRule.throttleFactor;
     float newSetpoint = (setpoint * attenuationCoeff) + throttleComponent;
     return newSetpoint;
 }
