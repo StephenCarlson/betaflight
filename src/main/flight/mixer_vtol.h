@@ -27,49 +27,21 @@
 
 
 
-// #define MAX_VTOL_RULES (2 * MAX_SUPPORTED_MOTORS)
+// #define MAX_VTOL_RULES (MAX_SUPPORTED_MOTORS)
 
-typedef struct vtolMixerConfig_s {
-    uint8_t dummy;
-} vtolMixerConfig_t;
+// typedef struct vtolMixerConfig_s {
+//     uint8_t dummy;
+// } vtolMixerConfig_t;
 
-PG_DECLARE(vtolMixerConfig_t, vtolMixerConfig);
+// PG_DECLARE(vtolMixerConfig_t, vtolMixerConfig);
 
 typedef struct vtolRule_s {
-    // uint8_t targetMotor;               // Motor being modified (captured as index for now)
-    uint8_t inputSource;                  // RC Input channel that drives transfer function (), indexed via rc_controls.h->rc_alias
+    uint8_t inputSource;                  // RC Input channel that drives transfer function VTOL Condition, indexed via rc_controls.h->rc_alias
     float throttleFactor;                 // Range [0f : 1.0f]; In forward flight: 0f stops rotor, 1.0f is passthru equivalent.
-    float pts[5];                         // Set of points for piecewise transfer function
-    // float p1;                             // Coefficient at inputSource=0
-    // float p2;                             // Coefficient at inputSource=250
-    // float p3;                             // Coefficient at inputSource=500
-    // float p4;                             // Coefficient at inputSource=750
-    // float p5;                             // Coefficient at inputSource=1000
+    float pts[5];                         // Motor setpoints from PIDs modulated by this piecewise transfer function and VTOL Condition.
 } vtolRule_t;
 
-// PG_DECLARE_ARRAY(vtolRule_t, MAX_VTOL_RULES, customVtolRules);
-
-// typedef struct vtolRules_s {
-//     // uint8_t vtolRuleCount;
-//     // const vtolRule_t *rule;
-//     const vtolRule_t rule;
-// } vtolRules_t;
-
-// extern
-// const vtolRule_t vtolRules[] = {
-//     { .inputSource=8, .throttleMask=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
-//     { .inputSource=8, .throttleMask=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
-//     { .inputSource=8, .throttleMask=0, .pts={0.00f,0.25f,0.60f,0.80f,1.00f} },
-//     };
-    // {8,0,0.00f,0.40f,0.80f,1.00f,1.00f},
-    // {8,0,0.00f,0.40f,0.80f,1.00f,1.00f},
-    // {8,1,0.00f,0.25f,0.80f,1.00f,1.00f}
-    // {3,{8,0,0.00f,0.40f,0.80f,1.00f,1.00f}},
-    // {3,{8,0,0.00f,0.40f,0.80f,1.00f,1.00f}},
-    // {3,{8,1,0.00f,0.25f,0.80f,1.00f,1.00f}}
-    // (sizeof(vtolRules) / sizeof(vtolRule_t))
+PG_DECLARE_ARRAY(vtolRule_t, MAX_SUPPORTED_MOTORS, customVtolRules);
 
 void mixerVtolInit(void);
-// void mixerVtolMotorAttenuation(float* setpoint, int motor);
-// float mixerVtolMotorAttenuation(float setpoint, float throttle, int motor);
 float mixerVtolMotorAttenuation(float setpoint, int motor);

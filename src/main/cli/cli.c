@@ -109,6 +109,7 @@ bool cliMode = false;
 #include "flight/pid.h"
 #include "flight/position.h"
 #include "flight/servos.h"
+#include "flight/mixer_vtol.h"
 
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/beeper.h"
@@ -2370,6 +2371,104 @@ static void cliServoMix(const char *cmdName, char *cmdline)
     }
 }
 #endif
+
+// #ifdef USE_SERVOS
+static void printVtolMix(dumpFlags_t dumpMask, const vtolRule_t *customVtolRules, const vtolRule_t *defaultVtolRules, const char *headingStr)
+{
+    const char *format = "vmix %d %d %s %s %s %s %s %s";
+    char buf0[FTOA_BUFFER_LENGTH];
+    char buf1[FTOA_BUFFER_LENGTH];
+    char buf2[FTOA_BUFFER_LENGTH];
+    char buf3[FTOA_BUFFER_LENGTH];
+    char buf4[FTOA_BUFFER_LENGTH];
+    char buf5[FTOA_BUFFER_LENGTH];
+    for (uint8_t i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
+        const uint8_t inputSource = customVtolRules[i].inputSource;
+        const float throttleFactor = customVtolRules[i].throttleFactor;
+        const float pt1 = customVtolRules[i].pts[0];
+        const float pt2 = customVtolRules[i].pts[1];
+        const float pt3 = customVtolRules[i].pts[2];
+        const float pt4 = customVtolRules[i].pts[3];
+        const float pt5 = customVtolRules[i].pts[4];
+        
+        bool equalsDefault = false;
+        if (defaultVtolRules) {
+            equalsDefault = !memcmp(&customVtolRules, &defaultVtolRules, sizeof(customVtolRules));
+            headingStr = cliPrintSectionHeading(dumpMask, !equalsDefault, headingStr);
+            cliDefaultPrintLinef(dumpMask, equalsDefault, format,
+                i,
+                defaultVtolRules[i].inputSource,
+                ftoa(defaultVtolRules[i].throttleFactor, buf0),
+                ftoa(defaultVtolRules[i].pts[0], buf1),
+                ftoa(defaultVtolRules[i].pts[1], buf2),
+                ftoa(defaultVtolRules[i].pts[2], buf3),
+                ftoa(defaultVtolRules[i].pts[3], buf4),
+                ftoa(defaultVtolRules[i].pts[4], buf5)
+            );
+        }
+
+        cliDumpPrintLinef(dumpMask, equalsDefault, format,
+            i,
+            inputSource,
+            ftoa(throttleFactor, buf0),
+            ftoa(pt1, buf1),
+            ftoa(pt2, buf2),
+            ftoa(pt3, buf3),
+            ftoa(pt4, buf4),
+            ftoa(pt5, buf5));
+    }
+}
+
+static void cliVtolMix(const char *cmdName, char *cmdline)
+{
+    int check = 0;
+    // uint8_t len;
+    const char *ptr;
+
+    if (isEmpty(cmdline)) {
+        printVtolMix(DUMP_MASTER, customVtolRules(0), NULL, NULL);
+    } else if (strncasecmp(cmdline, "reset", 5) == 0) {
+        // erase custom mixer
+        for (uint8_t i = 0; i < MAX_SUPPORTED_MOTORS; i++) {
+            customVtolRulesMutable(i)->throttleFactor = 0.0f;
+            customVtolRulesMutable(i)->pts[0] = 1.0f;
+            customVtolRulesMutable(i)->pts[1] = 1.0f;
+            customVtolRulesMutable(i)->pts[2] = 1.0f;
+            customVtolRulesMutable(i)->pts[3] = 1.0f;
+            customVtolRulesMutable(i)->pts[4] = 1.0f;
+        }
+    } else {
+        ptr = cmdline;
+        uint8_t i = atoi(ptr); // get motor number
+        if (i < MAX_SUPPORTED_MOTORS) {
+            ptr = nextArg(ptr);
+            if (ptr) {
+                customVtolRulesMutable(i)->inputSource = atoi(ptr);
+                check++;
+            }
+            ptr = nextArg(ptr);
+            if (ptr) {
+                customVtolRulesMutable(i)->throttleFactor = fastA2F(ptr);
+                check++;
+            }
+            ptr = nextArg(ptr);
+            for(int j=0; j<5; j++){
+                if(!ptr){ break; }
+                customVtolRulesMutable(i)->pts[j] = fastA2F(ptr);
+                check++;
+                ptr = nextArg(ptr);
+            }
+            if (check != 7) {
+                cliShowInvalidArgumentCountError(cmdName);
+            } else {
+                printVtolMix(DUMP_MASTER, customVtolRules(0), NULL, NULL);
+            }
+        } else {
+            cliShowArgumentRangeError(cmdName, "INDEX", 0, MAX_SUPPORTED_MOTORS - 1);
+        }
+    }
+}
+// #endif // USE_SERVOS
 
 #ifdef USE_SDCARD
 
@@ -6204,6 +6303,7 @@ static void printConfig(const char *cmdName, char *cmdline, bool doDiff)
             }
             printServoMix(dumpMask, customServoMixers_CopyArray, customServoMixers(0), servoMixHeadingStr);
 #endif
+            printVtolMix(dumpMask, customVtolRules_CopyArray, customVtolRules(0), "vmix");
 #endif
 
 #if defined(USE_BEEPER)
@@ -6519,6 +6619,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("timer", "show/set timers", "<> | <pin> list | <pin> [af<alternate function>|none|<option(deprecated)>] | list | show", cliTimer),
 #endif
     CLI_COMMAND_DEF("version", "show version", NULL, cliVersion),
+    CLI_COMMAND_DEF("vmix", "vtol mixer", NULL, cliVtolMix),
 #ifdef USE_VTX_CONTROL
 #ifdef MINIMAL_CLI
     CLI_COMMAND_DEF("vtx", "vtx channels on switch", NULL, cliVtx),

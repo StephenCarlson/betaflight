@@ -24,7 +24,7 @@
 
 #include "platform.h"
 
-#ifdef USE_SERVOS
+// #ifdef USE_SERVOS
 
 #include "common/maths.h"
 // #include "common/utils.h"
@@ -41,20 +41,21 @@
 #include "rx/rx.h"
 
 
-PG_REGISTER_WITH_RESET_TEMPLATE(vtolMixerConfig_t, vtolMixerConfig, PG_VTOL_CONFIG, 0);
-// PG_REGISTER_ARRAY(vtolRule_t, MAX_VTOL_RULES, customVtolRules, PG_VTOL_CONFIG, 0);
+// PG_REGISTER_WITH_RESET_TEMPLATE(vtolMixerConfig_t, vtolMixerConfig, PG_VTOL_CONFIG, 0);
+PG_REGISTER_ARRAY(vtolRule_t, MAX_SUPPORTED_MOTORS, customVtolRules, PG_VTOL_CONFIG, 0);
 
-PG_RESET_TEMPLATE(vtolMixerConfig_t, vtolMixerConfig,
-    .dummy = 0
-);
+// PG_RESET_TEMPLATE(vtolMixerConfig_t, vtolMixerConfig,
+//     .dummy = 0
+// );
 
 // PWM_RANGE_MIN is 1000, but not appropiate for 0 to 1000 range
 
-const vtolRule_t vtolRules[] = {
-    { .inputSource=4, .throttleFactor=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
-    { .inputSource=4, .throttleFactor=1, .pts={0.00f,0.40f,0.80f,0.95f,1.00f} },
-    { .inputSource=4, .throttleFactor=0, .pts={0.00f,0.25f,0.60f,0.80f,1.00f} },
-    };
+static vtolRule_t vtolRules[MAX_SUPPORTED_MOTORS];
+// static vtolRule_t vtolRules[] = {
+//     { .inputSource=4, .throttleFactor=1, .pts={0.00f,0.39f,0.72f,0.94f,1.00f} },
+//     { .inputSource=4, .throttleFactor=1, .pts={0.00f,0.39f,0.72f,0.94f,1.00f} },
+//     { .inputSource=4, .throttleFactor=0, .pts={0.00f,0.30f,0.60f,0.84f,1.00f} },
+//     };
 
 
 
@@ -67,7 +68,7 @@ float mixerVtolMotorAttenuation(float setpoint, int motor) // Removed throttle f
     vtolRule_t currentVtolRule = vtolRules[motor];
     // float throttle = constrain(rcData[THROTTLE] - PWM_RANGE_MIN, 0, 1000); // Needs rc_command float, inject from outside instead.
     
-    uint8_t ch = constrain(currentVtolRule.inputSource, ROLL, AUX8);
+    uint8_t ch = currentVtolRule.inputSource;
     int16_t vtolCondition = constrain( (rcData[ch] - PWM_RANGE_MIN), 0, (PWM_RANGE_MAX-PWM_RANGE_MIN));
 
     const int8_t maxIndex = sizeof(((vtolRule_t *)0)->pts)/sizeof(float) - 1; // 4
@@ -89,7 +90,10 @@ float mixerVtolMotorAttenuation(float setpoint, int motor) // Removed throttle f
 
 void mixerVtolInit(void)
 {
-
+    for(uint8_t i=0; i<MAX_SUPPORTED_MOTORS; i++){
+        vtolRules[i] = *customVtolRules(i);
+        vtolRules[i].inputSource = constrain(vtolRules[i].inputSource, ROLL, AUX8);
+    }
 }
 
-#endif // USE_SERVOS
+//#endif // USE_SERVOS

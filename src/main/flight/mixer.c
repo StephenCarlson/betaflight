@@ -382,6 +382,7 @@ void mixerInit(mixerMode_e mixerMode)
         mixerTricopterInit();
     }
 #endif
+    mixerVtolInit();
 
 #ifdef USE_DYN_IDLE
     idleThrottleOffset = motorConfig()->digitalIdleOffsetValue * 0.0001f;
